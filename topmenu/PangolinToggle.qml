@@ -19,36 +19,38 @@ import org.nemomobile.lipstick 0.1 as Lipstick
 SettingsToggle {
     id: root
 
-    property string unitState: unit.activeState
-    readonly property bool unitRunning: unitState === "active"
-    readonly property bool transitioning: unitState === "activating"
-                                          || unitState === "deactivating"
-                                          || unitState === "reloading"
-    readonly property bool failed: unitState === "failed"
+    property string _unitState: unit.activeState
+    readonly property bool _unitRunning: _unitState === "active"
+    readonly property bool _transitioning: _unitState === "activating"
+                                           || _unitState === "deactivating"
+                                           || _unitState === "reloading"
+    readonly property bool _failed: _unitState === "failed"
 
     // Marked for translation; lipstick only shows a translation if the
     // app's catalog is loaded there, otherwise the English text.
-    name: failed ? qsTr("Pangolin (failed)") : "Pangolin"
+    name: _failed ? qsTr("Pangolin (failed)") : "Pangolin"
     activeText: "Pangolin"
     icon.source: "/usr/share/harbour-pangolin-ui/icons/icon-m-pangolin.png"
 
-    active: unitRunning
-    checked: unitRunning
-    busy: transitioning
-
-    onToggled: {
-        if (transitioning)
-            return
-        unit.call(unitRunning ? "Stop" : "Start", ["replace"])
-        // Fallback in case no PropertiesChanged arrives.
-        pollTimer.restart()
-    }
+    active: _unitRunning
+    checked: _unitRunning
+    busy: _transitioning
 
     menu: ContextMenu {
         SettingsMenuItem {
             onClicked: appLauncher.launchApplication()
         }
     }
+
+    onToggled: {
+        if (_transitioning) {
+            return
+        }
+        unit.call(_unitRunning ? "Stop" : "Start", ["replace"])
+        // Fallback in case no PropertiesChanged arrives.
+        pollTimer.restart()
+    }
+    on_TransitioningChanged: if (_transitioning && !pollTimer.running) { pollTimer.start() }
 
     Lipstick.LauncherItem {
         id: appLauncher
@@ -57,14 +59,14 @@ SettingsToggle {
 
     DBusInterface {
         id: unit
+
+        property string activeState
+
         bus: DBus.SessionBus
         service: "org.freedesktop.systemd1"
         // "harbour-pangolin.service" with systemd's bus-path escaping
         path: "/org/freedesktop/systemd1/unit/harbour_2dpangolin_2eservice"
         iface: "org.freedesktop.systemd1.Unit"
-
-        property string activeState
-
         signalsEnabled: true
         propertiesEnabled: true
     }
@@ -73,7 +75,6 @@ SettingsToggle {
     // Subscribing is idempotent and is never undone here (Unsubscribe would
     // affect lipstick's shared bus connection).
     DBusInterface {
-        id: manager
         bus: DBus.SessionBus
         service: "org.freedesktop.systemd1"
         path: "/org/freedesktop/systemd1"
@@ -84,34 +85,36 @@ SettingsToggle {
     // Async Properties.Get (never blocks the home screen).
     DBusInterface {
         id: props
-        bus: DBus.SessionBus
-        service: "org.freedesktop.systemd1"
-        path: "/org/freedesktop/systemd1/unit/harbour_2dpangolin_2eservice"
-        iface: "org.freedesktop.DBus.Properties"
 
         function refresh() {
             typedCall("Get",
                       [{ "type": "s", "value": "org.freedesktop.systemd1.Unit" },
                        { "type": "s", "value": "ActiveState" }],
-                      function(state) { if (typeof state === "string") unit.activeState = state })
+                      function(state) { if (typeof state === "string") { unit.activeState = state } })
         }
+
+        bus: DBus.SessionBus
+        service: "org.freedesktop.systemd1"
+        path: "/org/freedesktop/systemd1/unit/harbour_2dpangolin_2eservice"
+        iface: "org.freedesktop.DBus.Properties"
     }
 
     // Short, bounded poll only after a tap or while systemd reports a
     // transitional state; idle cost is zero.
     Timer {
         id: pollTimer
-        property int ticks: 0
+
+        property int _ticks
+
         interval: 1000
         repeat: true
-        onRunningChanged: if (running) ticks = 0
+        onRunningChanged: if (running) { _ticks = 0 }
         onTriggered: {
             props.refresh()
-            ticks++
-            if (ticks >= 25 || (ticks >= 2 && !root.transitioning))
+            _ticks++
+            if (_ticks >= 25 || (_ticks >= 2 && !root._transitioning)) {
                 stop()
+            }
         }
     }
-
-    onTransitioningChanged: if (transitioning && !pollTimer.running) pollTimer.start()
 }

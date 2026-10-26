@@ -58,7 +58,7 @@ Page {
                 inputMethodHints: Qt.ImhNoAutoUppercase | Qt.ImhNoPredictiveText
                 EnterKey.iconSource: "image://theme/icon-m-enter-accept"
                 EnterKey.onClicked: { pangolin.extraUpArgs = text; focus = false }
-                onActiveFocusChanged: if (!activeFocus) pangolin.extraUpArgs = text
+                onActiveFocusChanged: if (!activeFocus) { pangolin.extraUpArgs = text }
             }
 
             SectionHeader { text: qsTr("Info") }

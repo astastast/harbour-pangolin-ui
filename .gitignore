@@ -1,0 +1,14 @@
+# Qt Creator / Sailfish SDK per-user settings
+*.pro.user
+*.pro.user.*
+*.qmlproject.user
+*.qmlproject.user.*
+CMakeLists.txt.user*
+
+# Patched Pangolin CLI, built by pangolin-cli/build.sh before packaging
+/rpm/pangolin-cli_linux_*
+
+# In-tree build output (the SDK normally shadow-builds next to the project)
+/build-*/
+/RPMS/
+*.qm

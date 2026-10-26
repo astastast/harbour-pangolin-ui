@@ -4,7 +4,7 @@ TARGET = harbour-pangolin-ui
 CONFIG += sailfishapp c++11
 
 SOURCES += \
-    src/main.cpp \
+    src/harbour-pangolin-ui.cpp \
     src/pangolincontroller.cpp
 
 HEADERS += \

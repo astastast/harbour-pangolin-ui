@@ -3,15 +3,19 @@ import Sailfish.Silica 1.0
 
 Page {
     id: page
-    allowedOrientations: Orientation.All
 
-    property bool finished: false
-    property bool success: false
+    property bool _finished
+    property bool _success
+
+    allowedOrientations: Orientation.All
 
     Connections {
         target: pangolin
         onActionFinished: {
-            if (action === "login") { page.finished = true; page.success = ok }
+            if (action === "login") {
+                page._finished = true
+                page._success = ok
+            }
         }
     }
 
@@ -55,7 +59,7 @@ Page {
                     if (pangolin.loginActive) {
                         pangolin.cancelLogin()
                     } else {
-                        page.finished = false
+                        page._finished = false
                         pangolin.login(hostField.text)
                     }
                 }
@@ -104,12 +108,12 @@ Page {
             }
 
             Label {
-                visible: page.finished
+                visible: page._finished
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
                 wrapMode: Text.Wrap
-                color: page.success ? Theme.highlightColor : Theme.errorColor
-                text: page.success ? qsTr("Logged in.") : qsTr("Login failed or was cancelled. See the output on the main page.")
+                color: page._success ? Theme.highlightColor : Theme.errorColor
+                text: page._success ? qsTr("Logged in.") : qsTr("Login failed or was cancelled. See the output on the main page.")
             }
         }
     }

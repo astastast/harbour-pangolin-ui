@@ -8,22 +8,23 @@ import Sailfish.Silica 1.0
 // internal/config/config.go defaultLogPath()).
 Page {
     id: page
-    allowedOrientations: Orientation.All
 
-    property string logText: ""
-    property bool journal: !pangolin.isRoot
+    property string _logText
+    property bool _journal: !pangolin.isRoot
 
-    function reload() {
-        logText = journal ? pangolin.readServiceLog(400) : pangolin.readClientLog(400)
+    function _reload() {
+        _logText = _journal ? pangolin.readServiceLog(400) : pangolin.readClientLog(400)
     }
 
-    Component.onCompleted: reload()
+    allowedOrientations: Orientation.All
+
+    Component.onCompleted: _reload()
 
     Timer {
         interval: 3000
         repeat: true
         running: autoRefresh.checked && page.status === PageStatus.Active
-        onTriggered: page.reload()
+        onTriggered: page._reload()
     }
 
     SilicaFlickable {
@@ -33,12 +34,12 @@ Page {
 
         PullDownMenu {
             MenuItem {
-                text: page.journal ? qsTr("Show client.log") : qsTr("Show service log")
+                text: page._journal ? qsTr("Show client.log") : qsTr("Show service log")
                 visible: pangolin.serviceAvailable
-                onClicked: { page.journal = !page.journal; page.reload() }
+                onClicked: { page._journal = !page._journal; page._reload() }
             }
-            MenuItem { text: qsTr("Reload"); onClicked: page.reload() }
-            MenuItem { text: qsTr("Copy all"); onClicked: Clipboard.text = page.logText }
+            MenuItem { text: qsTr("Reload"); onClicked: page._reload() }
+            MenuItem { text: qsTr("Copy all"); onClicked: Clipboard.text = page._logText }
         }
         PushUpMenu {
             MenuItem { text: qsTr("Scroll to top"); onClicked: flick.scrollToTop() }
@@ -47,10 +48,10 @@ Page {
         VerticalScrollDecorator { }
 
         ViewPlaceholder {
-            enabled: page.logText.length === 0
+            enabled: page._logText.length === 0
             text: qsTr("Log is empty")
-            hintText: page.journal ? qsTr("Start Pangolin to see the service output")
-                                   : qsTr("Written only by a client started from Terminal")
+            hintText: page._journal ? qsTr("Start Pangolin to see the service output")
+                                    : qsTr("Written only by a client started from Terminal")
         }
 
         Column {
@@ -59,8 +60,8 @@ Page {
             spacing: Theme.paddingSmall
 
             PageHeader {
-                title: page.journal ? qsTr("Service log") : qsTr("Client log")
-                description: page.journal ? pangolin.serviceLogPath : pangolin.clientLogPath
+                title: page._journal ? qsTr("Service log") : qsTr("Client log")
+                description: page._journal ? pangolin.serviceLogPath : pangolin.clientLogPath
             }
 
             TextSwitch {
@@ -70,15 +71,17 @@ Page {
             }
 
             Label {
-                visible: page.logText.length > 0
+                visible: page._logText.length > 0
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * x
                 wrapMode: Text.WrapAnywhere
                 textFormat: Text.PlainText
-                font.family: "monospace"
-                font.pixelSize: Theme.fontSizeTiny
+                font {
+                    family: "monospace"
+                    pixelSize: Theme.fontSizeTiny
+                }
                 color: Theme.secondaryColor
-                text: page.logText
+                text: page._logText
             }
         }
     }

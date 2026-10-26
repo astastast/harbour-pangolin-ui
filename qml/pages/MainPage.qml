@@ -3,7 +3,18 @@ import Sailfish.Silica 1.0
 
 Page {
     id: page
+
+    readonly property bool _isRunning: pangolin.state === "connected"
+                                       || pangolin.state === "registered"
+                                       || pangolin.state === "disconnected"
+                                       || pangolin.state === "starting"
+
     allowedOrientations: Orientation.All
+
+    Component.onCompleted: {
+        pangolin.checkVersion()
+        pangolin.refreshStatus()
+    }
 
     // Poll `pangolin status --json` while this page is visible.
     Binding {
@@ -12,18 +23,7 @@ Page {
         value: page.status === PageStatus.Active && Qt.application.state === Qt.ApplicationActive
     }
 
-    readonly property bool isRunning: pangolin.state === "connected"
-                                      || pangolin.state === "registered"
-                                      || pangolin.state === "disconnected"
-                                      || pangolin.state === "starting"
-
-    Component.onCompleted: {
-        pangolin.checkVersion()
-        pangolin.refreshStatus()
-    }
-
     SilicaFlickable {
-        id: flick
         anchors.fill: parent
         contentHeight: column.height + Theme.paddingLarge
 
@@ -102,7 +102,7 @@ Page {
                     // Theme colors, so the dot follows the ambience.
                     color: pangolin.state === "connected" ? Theme.highlightColor
                          : pangolin.state === "error" ? Theme.errorColor
-                         : page.isRunning ? Theme.secondaryHighlightColor
+                         : page._isRunning ? Theme.secondaryHighlightColor
                          : Theme.secondaryColor
                 }
                 Label {
@@ -142,12 +142,12 @@ Page {
             ButtonLayout {
                 Button {
                     text: qsTr("Start")
-                    enabled: pangolin.binaryFound && !pangolin.busy && !page.isRunning
+                    enabled: pangolin.binaryFound && !pangolin.busy && !page._isRunning
                     onClicked: pangolin.start()
                 }
                 Button {
                     text: qsTr("Stop")
-                    enabled: pangolin.binaryFound && !pangolin.busy && page.isRunning
+                    enabled: pangolin.binaryFound && !pangolin.busy && page._isRunning
                     onClicked: pangolin.stop()
                 }
             }
@@ -176,8 +176,10 @@ Page {
                 width: parent.width - 2 * x
                 wrapMode: Text.WrapAnywhere
                 textFormat: Text.PlainText
-                font.family: "monospace"
-                font.pixelSize: Theme.fontSizeTiny
+                font {
+                    family: "monospace"
+                    pixelSize: Theme.fontSizeTiny
+                }
                 color: Theme.secondaryColor
                 text: pangolin.output.length > 0 ? pangolin.output : qsTr("No output yet.")
             }

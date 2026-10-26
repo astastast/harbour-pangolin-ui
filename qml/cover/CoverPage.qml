@@ -2,11 +2,11 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 
 CoverBackground {
-    // Same rule as MainPage.isRunning, so the cover action matches Start/Stop.
-    readonly property bool isRunning: pangolin.state === "connected"
-                                      || pangolin.state === "registered"
-                                      || pangolin.state === "disconnected"
-                                      || pangolin.state === "starting"
+    // Same rule as MainPage._isRunning, so the cover action matches Start/Stop.
+    readonly property bool _isRunning: pangolin.state === "connected"
+                                       || pangolin.state === "registered"
+                                       || pangolin.state === "disconnected"
+                                       || pangolin.state === "starting"
 
     Column {
         anchors.centerIn: parent
@@ -31,8 +31,8 @@ CoverBackground {
     CoverActionList {
         enabled: !pangolin.busy && pangolin.binaryFound
         CoverAction {
-            iconSource: isRunning ? "image://theme/icon-cover-pause" : "image://theme/icon-cover-play"
-            onTriggered: isRunning ? pangolin.stop() : pangolin.start()
+            iconSource: _isRunning ? "image://theme/icon-cover-pause" : "image://theme/icon-cover-play"
+            onTriggered: _isRunning ? pangolin.stop() : pangolin.start()
         }
     }
 }
