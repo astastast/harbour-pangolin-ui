@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+X-Nemo-Application-Type=silica-qt5
+Icon=harbour-pangolin-ui
+Exec=harbour-pangolin-ui
+Name=Pangolin
+
+# The app must start external programs (pangolin, sudo / devel-su) that
+# create a TUN interface as root. That is impossible inside the Sailjail
+# sandbox, so sandboxing is disabled. (Not acceptable for Jolla Harbour.)
+[X-Sailjail]
+Sandboxing=Disabled

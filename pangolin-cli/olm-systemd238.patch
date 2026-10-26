@@ -1,0 +1,59 @@
+olm: treat a missing Link.SetDefaultRoute (systemd < 240) as non-fatal
+
+Sailfish OS ships systemd-resolved 238, which has no Link.SetDefaultRoute.
+olm then aborts applyDNSServers() before setting the "~." routing domain,
+and handleConnect() returns before SetRegistered(true) and the ping
+monitor. The "~." domain alone routes all queries to the link on 238.
+
+Applies to github.com/fosrl/olm v1.10.1 (used by fosrl/cli 0.19.0).
+
+diff --git a/dns/platform/systemd.go b/dns/platform/systemd.go
+index 2f18009..1af8322 100644
+--- a/dns/platform/systemd.go
++++ b/dns/platform/systemd.go
+@@ -4,6 +4,7 @@ package dns
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"fmt"
+ 	"net"
+ 	"net/netip"
+@@ -200,8 +201,14 @@ func (s *SystemdResolvedDNSConfigurator) applyDNSServers(servers []netip.Addr) e
+ 
+ 	// Set this interface as the default route for DNS
+ 	// This ensures all DNS queries prefer this interface
++	// Link.SetDefaultRoute only exists in systemd >= 240 (Sailfish OS ships
++	// 238). The "~." routing domain set below has the same effect there, so
++	// an unknown method is not fatal.
+ 	if err := s.callLinkMethod(systemdDbusSetDefaultRouteMethod, true); err != nil {
+-		return fmt.Errorf("set default route: %w", err)
++		if !isUnknownMethod(err) {
++			return fmt.Errorf("set default route: %w", err)
++		}
++		fmt.Printf("warning: %s not supported by this systemd-resolved, relying on the ~. domain\n", systemdDbusSetDefaultRouteMethod)
+ 	}
+ 
+ 	// Set the root zone "." as a match-only domain
+@@ -236,6 +243,21 @@ func (s *SystemdResolvedDNSConfigurator) applyDNSServers(servers []netip.Addr) e
+ 	return nil
+ }
+ 
++// isUnknownMethod reports whether err is a D-Bus UnknownMethod error, e.g.
++// a systemd-resolved Link method that this systemd version does not have.
++func isUnknownMethod(err error) bool {
++	const name = "org.freedesktop.DBus.Error.UnknownMethod"
++	var e dbus.Error
++	if errors.As(err, &e) {
++		return e.Name == name
++	}
++	var pe *dbus.Error
++	if errors.As(err, &pe) {
++		return pe.Name == name
++	}
++	return false
++}
++
+ // callLinkMethod is a helper to call methods on the link object
+ func (s *SystemdResolvedDNSConfigurator) callLinkMethod(method string, value any) error {
+ 	conn, err := dbus.SystemBus()

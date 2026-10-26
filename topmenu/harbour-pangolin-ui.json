@@ -1,0 +1,15 @@
+{
+    "translation_catalog": "settings-system",
+    "entries": [
+        {
+            "path": "system_settings/look_and_feel/topmenu/actions/toggle_harbour_pangolin_ui",
+            "title": "Pangolin",
+            "type": "custom",
+            "icon": "/usr/share/harbour-pangolin-ui/icons/icon-m-pangolin.png",
+            "params": {
+                "source": "/usr/share/jolla-settings/pages/harbour-pangolin-ui/PangolinToggle.qml",
+                "type": "grid"
+            }
+        }
+    ]
+}

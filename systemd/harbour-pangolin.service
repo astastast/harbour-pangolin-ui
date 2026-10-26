@@ -1,0 +1,35 @@
+# systemd *user* unit, installed to /usr/lib/systemd/user/.
+# Started/stopped by harbour-pangolin-ui and by its Top Menu toggle. Runs the
+# Pangolin client in the foreground (`up --attach`) so systemd tracks it.
+# Root comes from the setuid helper shipped in the same RPM
+# (helper/pangolin-helper.c); it only accepts `up --attach` with allow-listed
+# flags and always runs /usr/bin/pangolin.
+#
+# Stopping: the user manager is not root and cannot signal the root-owned
+# pangolin process, so ExecStop runs `pangolin down` (unprivileged; it talks
+# to /var/run/olm.sock, mode 0666). The client then exits gracefully.
+#
+# DNS: the bundled CLI is built with pangolin-cli/olm-systemd238.patch, so
+# olm's own DNS override works on Sailfish's systemd-resolved 238.
+#
+# Logs: $XDG_RUNTIME_DIR/harbour-pangolin.log (on Sailfish the user cannot
+# read the user journal).
+[Unit]
+Description=Pangolin client (harbour-pangolin-ui)
+Documentation=https://github.com/fosrl/cli
+
+[Service]
+Type=simple
+Environment=PANGOLIN_UP_ARGS=
+# Written by the app from its Settings; overrides the default above.
+EnvironmentFile=-%h/.config/harbour-pangolin-ui/service.env
+# file: (systemd 238) neither truncates nor appends; every command writes
+# from offset 0. So ExecStartPre truncates, and ExecStop's output is
+# discarded instead of overwriting the client's output.
+StandardOutput=file:%t/harbour-pangolin.log
+StandardError=inherit
+ExecStartPre=/bin/sh -c ': > "%t/harbour-pangolin.log"'
+ExecStart=/bin/sh -c 'exec /usr/libexec/harbour-pangolin-ui/pangolin-helper up --attach $${PANGOLIN_UP_ARGS}'
+ExecStop=-/bin/sh -c 'exec /usr/bin/pangolin down > /dev/null 2>&1'
+TimeoutStopSec=15
+Restart=no
